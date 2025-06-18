@@ -24,6 +24,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	q, err := ch.QueueDeclare(routing.GameLogSlug, true, false, false, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ch.QueueBind(routing.GameLogSlug, "game_logs.*", routing.ExchangePerilTopic, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("created and bound q", q)
+
 	gamelogic.PrintServerHelp()
 
 	for {

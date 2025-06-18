@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -71,4 +72,31 @@ func DeclareAndBind(
 	}
 
 	return ch, q, nil
+}
+
+func SubscribeJSON[T any](
+	conn *amqp091.Connection,
+	exchange,
+	queueName,
+	key string,
+	simpleQueueType int,
+	handler func(T),
+) error {
+	ch, _, err := DeclareAndBind(conn, exchange, routing.GameLogSlug, queueName, int(Durable))
+	if err != nil {
+		return err
+	}
+
+	consume_ch, err := ch.Consume(queueName, "", false, false, false, false, nil)
+
+	go func() {
+		for delivery := range consume_ch {
+			var data T
+			json.Unmarshal(delivery.Body, &data)
+			handler(data)
+			delivery.Ack(false)
+		}
+	}()
+
+	return nil
 }
